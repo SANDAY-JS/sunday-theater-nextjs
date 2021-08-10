@@ -1,65 +1,40 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import useSWR from "swr";
+import Head from "next/head";
+import unfetch from "isomorphic-unfetch";
+import Link from "next/link";
 
-export default function Home() {
+const url = "http://sunday-theater.local/wp-json/wp/v2/posts";
+const fetcher = (url) => unfetch(url).then((r) => r.json());
+
+export const Home = ({ posts: initialPosts }) => {
+  const { data: posts } = useSWR(url, fetcher, initialPosts);
+
   return (
-    <div className={styles.container}>
+    <div>
       <Head>
         <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
+      {posts.map((post) => {
+        return (
+          <article key={post.id}>
+            <Link href={`/${post.slug}`}>
+              <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+            </Link>
+            <div dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
+          </article>
+        );
+      })}
     </div>
-  )
-}
+  );
+};
+
+export const getStaticProps = async () => {
+  const posts = await fetcher(url);
+  console.log(posts);
+
+  return {
+    props: { posts },
+  };
+};
+
+export default Home;
